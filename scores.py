@@ -1,7 +1,23 @@
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, make_scorer, recall_score, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score,
+    make_scorer,
+    recall_score,
+    roc_auc_score,
+    confusion_matrix,
+)
 from sklearn.model_selection import cross_val_score
+
+
+def print_metrics(y_true, y_pred, model_name):
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    print(model_name)
+    print(f"Sensitivity: {tp / (tp + fn) * 100:.1f}%")
+    print(f"Specificity: {tn / (tn + fp) * 100:.1f}%")
+    print(f"Accuracy: {accuracy_score(y_true, y_pred) * 100:.1f}%")
+    print(f"ROC-AUC: {roc_auc_score(y_true, y_pred) * 100:.1f}%")
+    print()
 
 
 def cross_validate(estimator, X: pd.DataFrame, y: pd.Series, neg: int, k=10):
