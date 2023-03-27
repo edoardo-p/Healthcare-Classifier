@@ -1,23 +1,24 @@
 import numpy as np
 import pandas as pd
+from joblib import dump
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
-from scores import cross_validate
+from scores import print_metrics
 
 
-def get_principal_components(X: pd.DataFrame, threshold: float = 0.9) -> pd.DataFrame:
+def pca(X: pd.DataFrame, threshold: float = 0.9) -> pd.DataFrame:
     l, v = np.linalg.eig(X.corr())
     eigen = pd.DataFrame(v.real.T)
     eigen["l"] = l.real
     eigen.sort_values("l", ascending=False, inplace=True)
     cumulative = np.cumsum(eigen["l"] / sum(eigen["l"]))
     n_comp = sum(cumulative <= threshold) + 1
-    return eigen.head(n_comp)
+    return eigen.head(n_comp).drop("l", axis=1).T
 
 
-def pca(X: pd.DataFrame, components: pd.DataFrame) -> pd.DataFrame:
-    transformed = np.dot(X, components.drop("l", axis=1).T)
+def reduce(X: pd.DataFrame, components: pd.DataFrame) -> pd.DataFrame:
+    transformed = np.dot(X, components)
     return (transformed - np.mean(transformed, axis=0)) / np.std(transformed, axis=0)
 
 
@@ -34,17 +35,13 @@ def svm_classification(
 
     # PCA on train
     if kwargs.get("pca", False):
-        components = get_principal_components(X_train)
-        X_train = pca(X_train, components)
-        X_test = pca(X_test, components)
+        components = pca(X_train)
+        X_train = reduce(X_train, components)
+        X_test = reduce(X_test, components)
 
     # Train the models
-    for c in (1, 5, 10):
-        svc = SVC(kernel="linear", random_state=seed, C=c)
-        # svc.fit(X_train, y_train)
-
-        # Cross Validation
-        print(f"Linear standardized SVC (C={c}) 1v{neg_class}")
-        cross_validate(svc, X_train, y_train, neg_class)
-        # print(svc.score(X_test, y_test))
-        print()
+    svc = SVC(kernel="linear", random_state=seed, C=5)
+    svc.fit(X_train, y_train)
+    dump(svc, f".\\models\\svc_1v{neg_class}.joblib")
+    print_metrics(y_test, svc.predict(X_test), f"SVC 1v{neg_class}")
+    print()
