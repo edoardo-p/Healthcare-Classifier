@@ -26,8 +26,6 @@ def svm_classification(
 ) -> None:
     # Model params
     seed = kwargs.get("seed", 42)
-    kernel = kwargs.get("kernel", "linear")
-    C = kwargs.get("C", 1)
 
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
@@ -41,12 +39,12 @@ def svm_classification(
         X_test = pca(X_test, components)
 
     # Train the models
-    svc = SVC(kernel=kernel, random_state=seed, C=C)
-    # svc.fit(X_train, y_train)
+    for c in (1, 5, 10):
+        svc = SVC(kernel="linear", random_state=seed, C=c)
+        # svc.fit(X_train, y_train)
 
-    # Cross Validation
-    print(f"Linear standardized SVC 1v{neg_class}")
-    cross_validate(svc, X_train, y_train, neg_class)
-    print(svc.score(X_test, y_test))
-    print()
-
+        # Cross Validation
+        print(f"Linear standardized SVC (C={c}) 1v{neg_class}")
+        cross_validate(svc, X_train, y_train, neg_class)
+        # print(svc.score(X_test, y_test))
+        print()
