@@ -3,8 +3,32 @@ import pandas as pd
 from joblib import dump
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
+from sklearn.base import clone
+from scores import print_metrics, cross_validate
 
-from scores import print_metrics
+
+def cross_validation(
+    estimator, X: pd.DataFrame, y: pd.DataFrame, neg: int, k=5, seed=42
+):
+    np.random.seed(seed)
+    idxs = X.index.values
+    np.random.shuffle(idxs)
+    models = [clone(estimator) for _ in range(k)]
+    for i in range(k):
+        print(f"Starting fold {i} for 1v{neg}")
+        start = i * len(X) // k
+        end = (i + 1) * len(X) // k
+        fold = idxs[start:end]
+        # X_test = X.iloc[fold]
+        # y_test = y.iloc[fold]
+        X_train = X.iloc[np.setdiff1d(idxs, fold)]
+        y_train = y.iloc[np.setdiff1d(idxs, fold)]
+        print("Fitting model...")
+        models[i].fit(X_train, y_train)
+        print("Model fitted")
+        dump(models[i], f".\\models\\svc_1v{neg}_fold{i}.joblib")
+
+    return models
 
 
 def pca(X: pd.DataFrame, threshold: float = 0.9) -> pd.DataFrame:
@@ -19,11 +43,13 @@ def pca(X: pd.DataFrame, threshold: float = 0.9) -> pd.DataFrame:
 
 def reduce(X: pd.DataFrame, components: pd.DataFrame) -> pd.DataFrame:
     transformed = np.dot(X, components)
-    return (transformed - np.mean(transformed, axis=0)) / np.std(transformed, axis=0)
+    return pd.DataFrame(
+        transformed - np.mean(transformed, axis=0) / np.std(transformed, axis=0)
+    )
 
 
 def svm_classification(
-    df: pd.DataFrame, labels: pd.Series, neg_class: int, **kwargs
+    df: pd.DataFrame, labels: pd.Series, neg_class: int, k=5, **kwargs
 ) -> None:
     # Model params
     seed = kwargs.get("seed", 42)
@@ -40,8 +66,11 @@ def svm_classification(
         X_test = reduce(X_test, components)
 
     # Train the models
-    svc = SVC(kernel="linear", random_state=seed, C=5)
-    svc.fit(X_train, y_train)
-    dump(svc, f".\\models\\svc_1v{neg_class}.joblib")
-    print_metrics(y_test, svc.predict(X_test), f"SVC 1v{neg_class}")
+    svc = SVC(kernel="linear", random_state=seed, C=5, max_iter=50)
+    svc_models = cross_validation(svc, X_train, y_train, neg_class, k=k, seed=seed)
+    predictions = np.array([model.predict(X_test) for model in svc_models])
+    final = np.count_nonzero(predictions, axis=0) > (k // 2)
+    print(f"SVC 1v{neg_class}")
+    accuracy = sum(final == y_test) / len(y_test)
+    print(accuracy)
     print()
