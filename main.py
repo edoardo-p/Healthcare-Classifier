@@ -2,8 +2,6 @@ import pandas as pd
 
 import svc
 
-seed = 42
-
 
 def main():
     df = pd.read_csv("data.csv", index_col=0)
@@ -12,6 +10,11 @@ def main():
     df3 = df[df["y"] == 3]
     df4 = df[df["y"] == 4]
     df5 = df[df["y"] == 5]
+
+    df2["y"].values[:] = 0
+    df3["y"].values[:] = 0
+    df4["y"].values[:] = 0
+    df5["y"].values[:] = 0
 
     df12 = pd.concat((df1, df2), axis=0)
     df13 = pd.concat((df1, df3), axis=0)
@@ -23,7 +26,7 @@ def main():
     labels14 = df14.pop("y")
     labels15 = df15.pop("y")
 
-    params = {"seed": seed, "pca": True, "scale": True, "k": 5}
+    params = {"seed": 42, "pca": True, "scale": True, "k": 5}
 
     svc.svm_classification(df12, labels12, 2, **params)
     svc.svm_classification(df13, labels13, 3, **params)
