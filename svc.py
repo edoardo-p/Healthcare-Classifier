@@ -1,9 +1,12 @@
+import os
+
 import numpy as np
 import pandas as pd
 from joblib import dump
+from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
-from sklearn.base import clone
+
 from scores import print_metrics
 
 
@@ -29,14 +32,19 @@ def cross_validation(
     return models
 
 
-def pca(X: pd.DataFrame, threshold: float = 0.9) -> pd.DataFrame:
+def pca(X: pd.DataFrame, threshold: float = 0.9, savefile: str = None) -> pd.DataFrame:
+    if os.path.exists(os.path.join("pca", savefile)):
+        return pd.DataFrame(np.load(os.path.join("pca", savefile)))
     l, v = np.linalg.eig(X.corr())
     eigen = pd.DataFrame(v.real.T)
     eigen["l"] = l.real
     eigen.sort_values("l", ascending=False, inplace=True)
     cumulative = np.cumsum(eigen["l"] / sum(eigen["l"]))
     n_comp = sum(cumulative <= threshold) + 1
-    return eigen.head(n_comp).drop("l", axis=1).T
+    components = eigen.head(n_comp).drop("l", axis=1).T
+    if savefile is not None:
+        np.save(os.path.join("pca", savefile), components)
+    return components
 
 
 def reduce(X: pd.DataFrame, components: pd.DataFrame) -> pd.DataFrame:
@@ -55,7 +63,7 @@ def svm_classification(
     )
 
     if kwargs.get("pca", False):
-        components = pca(X_train)
+        components = pca(X_train, threshold=0.99, savefile=f"pca{neg_class}.npy")
         X_train = reduce(X_train, components)
         X_test = reduce(X_test, components)
 
@@ -64,7 +72,7 @@ def svm_classification(
         X_test = (X_test - X_test.mean(axis=0)) / X_test.std(axis=0)
 
     # Training k-folds CV
-    svc = SVC(kernel="linear", random_state=seed, C=5, max_iter=1000)
+    svc = SVC(kernel="linear", random_state=seed, C=5)
     svc_models = cross_validation(svc, X_train, y_train, neg_class, k=k, seed=seed)
     predictions = np.array([model.predict(X_test) for model in svc_models])
     y_pred = np.count_nonzero(predictions, axis=0) > (k // 2)
