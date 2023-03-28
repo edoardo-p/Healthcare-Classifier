@@ -23,10 +23,12 @@ def main():
     labels14 = df14.pop("y")
     labels15 = df15.pop("y")
 
-    svc.svm_classification(df12, labels12, 2, pca=True, seed=seed)
-    svc.svm_classification(df13, labels13, 3, pca=True, seed=seed)
-    svc.svm_classification(df14, labels14, 4, pca=True, seed=seed)
-    svc.svm_classification(df15, labels15, 5, pca=True, seed=seed)
+    params = {"seed": seed, "pca": True, "scale": True, "k": 5}
+
+    svc.svm_classification(df12, labels12, 2, **params)
+    svc.svm_classification(df13, labels13, 3, **params)
+    svc.svm_classification(df14, labels14, 4, **params)
+    svc.svm_classification(df15, labels15, 5, **params)
 
 
 if __name__ == "__main__":
