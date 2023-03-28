@@ -1,11 +1,5 @@
 import numpy as np
-from sklearn.metrics import (
-    accuracy_score,
-    make_scorer,
-    recall_score,
-    roc_auc_score,
-    confusion_matrix,
-)
+from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 
 
 def print_metrics(y_true: np.ndarray, y_pred: np.ndarray, model_name: str) -> None:
