@@ -11,23 +11,12 @@ from joblib import load
 windll.shcore.SetProcessDpiAwareness(1)
 
 
-def main():
-    root = tk.Tk()
-
-    frame = ttk.Frame(root, padding=10)
-    frame.grid()
-
-    root.geometry("800x750")
-
-
-LARGEFONT = ("Verdana", 35)
-
-
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Seizure Detection")
         self.state("zoomed")
+        self.geometry("800x750")
 
         container = ttk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
@@ -107,7 +96,7 @@ class DiagnosePage(ttk.Frame):
     def __init__(self, parent: tk.Frame, _):
         super().__init__(parent)
 
-        select_label = ttk.Label(self, text="Select Data File")
+        select_label = ttk.Label(self, text="Select signal file")
         select_label.grid(row=0, column=0)
         self.file_entry = ttk.Entry(self, text=self.filename)
         self.file_entry.grid(row=0, column=1)
