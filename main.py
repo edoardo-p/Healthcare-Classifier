@@ -17,7 +17,6 @@ def main():
     frame = ttk.Frame(root, padding=10)
     frame.grid()
 
-    root.title("Support Vector Machine - Classifier")
     root.geometry("800x750")
 
 
@@ -27,8 +26,10 @@ LARGEFONT = ("Verdana", 35)
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.title("Seizure Detection")
+        self.state("zoomed")
 
-        container = tk.Frame(self)
+        container = ttk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
 
         container.grid_rowconfigure(0, weight=1)
@@ -43,29 +44,63 @@ class App(tk.Tk):
 
             frame.grid(row=0, column=0, sticky="nsew")
 
-        self.show_frame(DiagnosePage)
+        self.patient_data = {
+            "first_name": "",
+            "last_name": "",
+            "email": "",
+            "birth_date": "",
+        }
+        self.show_frame(PatientPage)
 
-    def show_frame(self, page: tk.Frame):
+    def show_frame(self, page: ttk.Frame):
         frame = self.frames[page]
         frame.tkraise()
 
 
 class PatientPage(tk.Frame):
-    def __init__(self, parent: tk.Frame, controller: App):
+    def __init__(self, parent: ttk.Frame, controller: App):
         super().__init__(parent)
-        label = ttk.Label(self, text="PatientPage", font=LARGEFONT)
-        label.grid(row=0, column=4, padx=10, pady=10)
+        self.controller = controller
+        ttk.Label(self, text="First Name").grid(row=0, column=0)
+        ttk.Label(self, text="Last Name").grid(row=1, column=0)
+        ttk.Label(self, text="Email").grid(row=2, column=0)
+        ttk.Label(self, text="Date of Birth").grid(row=3, column=0)
+        self.first_name = ttk.Entry(self)
+        self.first_name.grid(row=0, column=1)
+        self.last_name = ttk.Entry(self)
+        self.last_name.grid(row=1, column=1)
+        self.email = ttk.Entry(self)
+        self.email.grid(row=2, column=1)
+        self.birth_date = ttk.Entry(self)
+        self.birth_date.grid(row=3, column=1)
 
-        button = ttk.Button(
-            self,
-            text="DiagnosePage",
-            command=lambda: controller.show_frame(DiagnosePage),
-        )
+        button = ttk.Button(self, text="Submit", command=self.submit)
+        button.grid(row=4, column=0)
 
-        button.grid(row=1, column=1, padx=10, pady=10)
+        self.error_lab = ttk.Label(self)
+        self.error_lab.grid(row=5, column=0)
+
+    def submit(self):
+        data = [
+            self.first_name.get(),
+            self.last_name.get(),
+            self.email.get(),
+            self.birth_date.get(),
+        ]
+        for field in data:
+            if field is None or field == "":
+                self.error_lab.config(text="Fill in all fields")
+                return
+        # for field in self.contr
+        self.controller.patient_data["first_name"] = self.first_name.get()
+        self.controller.patient_data["last_name"] = self.last_name.get()
+        self.controller.patient_data["email"] = self.email.get()
+        self.controller.patient_data["birth_date"] = self.birth_date.get()
+        print(self.controller.patient_data)
+        self.controller.show_frame(DiagnosePage)
 
 
-class DiagnosePage(tk.Frame):
+class DiagnosePage(ttk.Frame):
     filename: str = None
     signal: pd.Series = None
 
@@ -79,7 +114,7 @@ class DiagnosePage(tk.Frame):
         self.open = ttk.Button(self, text="open", command=self.read_file)
         self.open.grid(row=0, column=2)
 
-        tk.Button(self, text="Diagnose", command=self.predict).grid(row=1, column=0)
+        ttk.Button(self, text="Diagnose", command=self.predict).grid(row=1, column=0)
         self.diagnosis = ttk.Label(self, text="")
         self.diagnosis.grid(row=2, column=0)
 
@@ -118,6 +153,10 @@ class DiagnosePage(tk.Frame):
         self.diagnosis.config(text=str(predictions))
 
 
-if __name__ == "__main__":
+def main():
     app = App()
     app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
