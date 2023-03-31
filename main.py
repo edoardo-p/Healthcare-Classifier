@@ -1,3 +1,4 @@
+import io
 import tkinter as tk
 from ctypes import windll
 from tkinter import ttk
@@ -7,15 +8,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from joblib import load
+from PIL import Image, ImageTk
 
 windll.shcore.SetProcessDpiAwareness(1)
+
+DAYS = list(range(1, 32))
+MONTHS = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+YEARS = list(range(1900, 2023))
 
 
 class App(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Seizure Detection")
-        self.state("zoomed")
+        # self.state("zoomed")
         self.geometry("800x750")
 
         container = ttk.Frame(self)
@@ -28,9 +47,7 @@ class App(tk.Tk):
 
         for page in (PatientPage, DiagnosePage):
             frame = page(container, self)
-
             self.frames[page] = frame
-
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.patient_data = {
@@ -41,27 +58,41 @@ class App(tk.Tk):
         }
         self.show_frame(PatientPage)
 
-    def show_frame(self, page: ttk.Frame):
+    def show_frame(self, page):
         frame = self.frames[page]
         frame.tkraise()
 
 
-class PatientPage(tk.Frame):
+class PatientPage(ttk.Frame):
     def __init__(self, parent: ttk.Frame, controller: App):
         super().__init__(parent)
         self.controller = controller
+
         ttk.Label(self, text="First Name").grid(row=0, column=0)
         ttk.Label(self, text="Last Name").grid(row=1, column=0)
         ttk.Label(self, text="Email").grid(row=2, column=0)
         ttk.Label(self, text="Date of Birth").grid(row=3, column=0)
+
         self.first_name = ttk.Entry(self)
         self.first_name.grid(row=0, column=1)
         self.last_name = ttk.Entry(self)
         self.last_name.grid(row=1, column=1)
         self.email = ttk.Entry(self)
         self.email.grid(row=2, column=1)
-        self.birth_date = ttk.Entry(self)
-        self.birth_date.grid(row=3, column=1)
+
+        self.day = tk.StringVar(self)
+        self.month = tk.StringVar(self)
+        self.year = tk.StringVar(self)
+
+        day_combo = ttk.Combobox(self, textvariable=self.day)
+        day_combo.grid(row=3, column=1)
+        day_combo["values"] = DAYS
+        month_combo = ttk.Combobox(self, textvariable=self.month)
+        month_combo.grid(row=3, column=2)
+        month_combo["values"] = MONTHS
+        year_combo = ttk.Combobox(self, textvariable=self.year)
+        year_combo.grid(row=3, column=3)
+        year_combo["values"] = YEARS
 
         button = ttk.Button(self, text="Submit", command=self.submit)
         button.grid(row=4, column=0)
@@ -70,58 +101,65 @@ class PatientPage(tk.Frame):
         self.error_lab.grid(row=5, column=0)
 
     def submit(self):
+        birth_date = (
+            f"{self.day.get()}/{MONTHS.index(self.month.get()) + 1}/{self.year.get()}"
+        )
         data = [
             self.first_name.get(),
             self.last_name.get(),
             self.email.get(),
-            self.birth_date.get(),
+            birth_date,
         ]
         for field in data:
             if field is None or field == "":
                 self.error_lab.config(text="Fill in all fields")
                 return
-        # for field in self.contr
-        self.controller.patient_data["first_name"] = self.first_name.get()
-        self.controller.patient_data["last_name"] = self.last_name.get()
-        self.controller.patient_data["email"] = self.email.get()
-        self.controller.patient_data["birth_date"] = self.birth_date.get()
+        for field, val in zip(self.controller.patient_data, data):
+            self.controller.patient_data[field] = val
+
         print(self.controller.patient_data)
         self.controller.show_frame(DiagnosePage)
 
 
 class DiagnosePage(ttk.Frame):
-    filename: str = None
-    signal: pd.Series = None
-
-    def __init__(self, parent: tk.Frame, _):
+    def __init__(self, parent: ttk.Frame, _):
         super().__init__(parent)
 
         select_label = ttk.Label(self, text="Select signal file")
         select_label.grid(row=0, column=0)
-        self.file_entry = ttk.Entry(self, text=self.filename)
+        self.file_entry = ttk.Entry(self)
         self.file_entry.grid(row=0, column=1)
         self.open = ttk.Button(self, text="open", command=self.read_file)
         self.open.grid(row=0, column=2)
+
+        self.plot_canvas = tk.Canvas(self)
+        self.plot_canvas.grid(row=1, column=0)
 
         ttk.Button(self, text="Diagnose", command=self.predict).grid(row=1, column=0)
         self.diagnosis = ttk.Label(self, text="")
         self.diagnosis.grid(row=2, column=0)
 
     def read_file(self):
-        self.filename = askopenfilename(title="Select file")
+        self.filename = askopenfilename(title="Select file", initialdir="%USERPROFILE%")
+        if self.filename is None or self.filename == "":
+            return
         self.file_entry.delete(0, tk.END)
         self.file_entry.insert(0, self.filename)
         self.signal = pd.read_csv(self.filename, index_col=0).squeeze()
         self.plot(self.signal, "019182")
 
-    @staticmethod
-    def plot(signal: pd.Series, idx: str) -> None:
+    def plot(self, signal: pd.Series, idx: str) -> None:
         t = np.arange(0, 23, 23 / len(signal))
-        plt.plot(t, signal, color="green")
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
         plt.title(f"Patient {idx} EEG")
-        plt.show()
+        plt.plot(t, signal, color="green")
+
+        img_buf = io.BytesIO()
+        plt.savefig(img_buf, format="png")
+        img = ImageTk.PhotoImage(Image.open(img_buf))
+        self.plot_canvas.create_image(0, 0, anchor=tk.NW, image=img)
+        img_buf.close()
 
     def predict(self) -> None:
         if self.signal is None:
