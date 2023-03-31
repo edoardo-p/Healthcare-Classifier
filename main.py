@@ -25,51 +25,35 @@ LARGEFONT = ("Verdana", 35)
 
 
 class App(tk.Tk):
-    # __init__ function for class tkinterApp
     def __init__(self, *args, **kwargs):
-        # __init__ function for class Tk
-        tk.Tk.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
-        # creating a container
         container = tk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
 
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        # initializing frames to an empty array
         self.frames = {}
 
-        # iterating through a tuple consisting
-        # of the different page layouts
-        for F in (PatientPage, DiagnosePage):
-            frame = F(container, self)
+        for page in (PatientPage, DiagnosePage):
+            frame = page(container, self)
 
-            # initializing frame of that object from
-            # startpage, page1, page2 respectively with
-            # for loop
-            self.frames[F] = frame
+            self.frames[page] = frame
 
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame(DiagnosePage)
 
-    # to display the current frame passed as
-    # parameter
-    def show_frame(self, cont):
-        frame = self.frames[cont]
+    def show_frame(self, page: tk.Frame):
+        frame = self.frames[page]
         frame.tkraise()
 
 
 class PatientPage(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-
-        # label of frame Layout 2
+    def __init__(self, parent: tk.Frame, controller: App):
+        super().__init__(parent)
         label = ttk.Label(self, text="PatientPage", font=LARGEFONT)
-
-        # putting the grid in its
-        # grid
         label.grid(row=0, column=4, padx=10, pady=10)
 
         button = ttk.Button(
@@ -78,17 +62,15 @@ class PatientPage(tk.Frame):
             command=lambda: controller.show_frame(DiagnosePage),
         )
 
-        # putting the button in its place by
-        # using grid
         button.grid(row=1, column=1, padx=10, pady=10)
 
 
 class DiagnosePage(tk.Frame):
-    def __init__(self, parent, controller):
-        self.filename: str = None
-        self.signal: pd.Series = None
+    filename: str = None
+    signal: pd.Series = None
 
-        tk.Frame.__init__(self, parent)
+    def __init__(self, parent: tk.Frame, _):
+        super().__init__(parent)
 
         select_label = ttk.Label(self, text="Select Data File")
         select_label.grid(row=0, column=0)
@@ -115,9 +97,9 @@ class DiagnosePage(tk.Frame):
         plt.xlabel("Time (s)")
         plt.ylabel("Amplitude")
         plt.title(f"Patient {idx} EEG")
-        plt.show(block=False)
+        plt.show()
 
-    def predict(self) -> int:
+    def predict(self) -> None:
         if self.signal is None:
             self.diagnosis.config(text="No signal selected")
             return
@@ -130,12 +112,12 @@ class DiagnosePage(tk.Frame):
         models = [load(f".\\models\\rf\\rf_1v{i}.joblib") for i in range(2, 6)]
 
         predictions = [model.predict(pca) for model, pca in zip(models, pcas)]
-        y_pred = sum(predictions) <= len(predictions) // 2
-        diagnosis = "Seizure" if y_pred else "No seizure"
-        self.diagnosis.config(text=diagnosis)
+        # y_pred = sum(predictions) <= len(predictions) // 2
+        # diagnosis = "Seizure" if y_pred else "No seizure"
+        # diagnosis = "-".join(predictions)
+        self.diagnosis.config(text=str(predictions))
 
 
 if __name__ == "__main__":
-    # Driver Code
     app = App()
     app.mainloop()
