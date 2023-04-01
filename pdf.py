@@ -7,4 +7,9 @@ class PDF(FPDF):
 
 pdf = PDF()
 pdf.add_page()
+# Do stuff
+
+# If positive add doctor's note to pdf
+
+
 pdf.output("test.pdf", "F")
