@@ -1,14 +1,15 @@
-import io
 import tkinter as tk
 from ctypes import windll
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from joblib import load
-from PIL import Image, ImageTk
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
+from matplotlib.figure import Figure
 
 windll.shcore.SetProcessDpiAwareness(1)
 
@@ -56,7 +57,8 @@ class App(tk.Tk):
             "email": "",
             "birth_date": "",
         }
-        self.show_frame(PatientPage)
+        # self.show_frame(PatientPage)
+        self.show_frame(DiagnosePage)
 
     def show_frame(self, page):
         frame = self.frames[page]
@@ -132,15 +134,12 @@ class DiagnosePage(ttk.Frame):
         self.open = ttk.Button(self, text="open", command=self.read_file)
         self.open.grid(row=0, column=2)
 
-        self.plot_canvas = tk.Canvas(self)
-        self.plot_canvas.grid(row=1, column=0)
-
-        ttk.Button(self, text="Diagnose", command=self.predict).grid(row=1, column=0)
+        ttk.Button(self, text="Diagnose", command=self.predict).grid(row=3, column=0)
         self.diagnosis = ttk.Label(self, text="")
-        self.diagnosis.grid(row=2, column=0)
+        self.diagnosis.grid(row=4, column=0)
 
     def read_file(self):
-        self.filename = askopenfilename(title="Select file", initialdir="%USERPROFILE%")
+        self.filename = askopenfilename(title="Select file", initialdir=".")
         if self.filename is None or self.filename == "":
             return
         self.file_entry.delete(0, tk.END)
@@ -149,17 +148,22 @@ class DiagnosePage(ttk.Frame):
         self.plot(self.signal, "019182")
 
     def plot(self, signal: pd.Series, idx: str) -> None:
-        t = np.arange(0, 23, 23 / len(signal))
-        plt.xlabel("Time (s)")
-        plt.ylabel("Amplitude")
-        plt.title(f"Patient {idx} EEG")
-        plt.plot(t, signal, color="green")
+        # fig = Figure(figsize=(5, 4), dpi=100)
+        fig = plt.figure(figsize=(5, 4), dpi=100)
+        ax: plt.Axes = fig.add_subplot()
+        t = np.arange(0, 23, 23.0 / len(signal))
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Amplitude")
+        ax.set_title(f"Patient {idx} EEG")
+        ax.plot(t, signal, "g-")
 
-        img_buf = io.BytesIO()
-        plt.savefig(img_buf, format="png")
-        img = ImageTk.PhotoImage(Image.open(img_buf))
-        self.plot_canvas.create_image(0, 0, anchor=tk.NW, image=img)
-        img_buf.close()
+        canvas = FigureCanvasTkAgg(fig, master=self)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=1, column=0, ipadx=40, ipady=20)
+
+        toolbar_frame = ttk.Frame(self)
+        toolbar_frame.grid(row=2, column=0)
+        NavigationToolbar2Tk(canvas, toolbar_frame)
 
     def predict(self) -> None:
         if self.signal is None:
@@ -171,9 +175,9 @@ class DiagnosePage(ttk.Frame):
             for i in range(2, 6)
         ]
 
-        models = [load(f".\\models\\rf\\rf_1v{i}.joblib") for i in range(2, 6)]
+        models = [load(f".\\models\\rf\\1v{i}.joblib") for i in range(2, 6)]
 
-        predictions = [model.predict(pca) for model, pca in zip(models, pcas)]
+        predictions = [model.predict(pca)[0] for model, pca in zip(models, pcas)]
         # y_pred = sum(predictions) <= len(predictions) // 2
         # diagnosis = "Seizure" if y_pred else "No seizure"
         # diagnosis = "-".join(predictions)
