@@ -1,7 +1,7 @@
 import pandas as pd
 
-import svc
 import rf
+import svc
 
 
 def main():
@@ -29,10 +29,10 @@ def main():
 
     params = {"seed": 42, "pca": True, "scale": True, "k": 5}
 
-    svc.svm_classification(df12, labels12, 2, **params)
-    svc.svm_classification(df13, labels13, 3, **params)
-    svc.svm_classification(df14, labels14, 4, **params)
-    svc.svm_classification(df15, labels15, 5, **params)
+    # svc.svm_classification(df12, labels12, 2, **params)
+    # svc.svm_classification(df13, labels13, 3, **params)
+    # svc.svm_classification(df14, labels14, 4, **params)
+    # svc.svm_classification(df15, labels15, 5, **params)
 
     rf.rf_classification(df12, labels12, 2, **params)
     rf.rf_classification(df13, labels13, 3, **params)

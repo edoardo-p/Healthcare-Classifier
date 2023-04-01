@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from joblib import dump
 from sklearn.base import clone
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 
 from scores import print_metrics
 
@@ -50,8 +50,13 @@ def rf_classification(
         X_test = (X_test - X_test.mean(axis=0)) / X_test.std(axis=0)
 
     # Training RF
-    rf = RandomForestClassifier(max_depth=2, random_state=seed)
+    pos_weight = 0.3
+    rf = RandomForestClassifier(
+        max_depth=50,
+        random_state=seed,
+        class_weight={0: (1 - pos_weight), 1: pos_weight},
+    )
     rf.fit(X_train, y_train)
-    dump(rf, f".\\models\\rf\\rf_1v{neg_class}.joblib")
+    dump(rf, f".\\models\\rf\\1v{neg_class}.joblib")
     y_pred = rf.predict(X_test)
     print_metrics(y_test, y_pred, f"RF 1v{neg_class}")
