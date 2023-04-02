@@ -3,7 +3,6 @@ import os
 import numpy as np
 import pandas as pd
 from joblib import dump
-from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
@@ -50,11 +49,11 @@ def rf_classification(
         X_test = (X_test - X_test.mean(axis=0)) / X_test.std(axis=0)
 
     # Training RF
-    pos_weight = 0.3
     rf = RandomForestClassifier(
-        max_depth=50,
+        n_estimators=150,
+        min_samples_split=4,
+        min_samples_leaf=50,
         random_state=seed,
-        class_weight={0: (1 - pos_weight), 1: pos_weight},
     )
     rf.fit(X_train, y_train)
     dump(rf, f".\\models\\rf\\1v{neg_class}.joblib")
