@@ -27,7 +27,7 @@ def cross_validation(
         X_train = X.loc[train_fold]
         y_train = y.loc[train_fold]
         models[i].fit(X_train, y_train)
-        dump(models[i], f".\\models\\svc\\svc_1v{neg}_fold{i}.joblib")
+        dump(models[i], f".\\models\\svc\\1v{neg}_fold{i}.joblib")
 
     return models
 
@@ -76,4 +76,5 @@ def svm_classification(
     svc_models = cross_validation(svc, X_train, y_train, neg_class, k=k, seed=seed)
     predictions = np.array([model.predict(X_test) for model in svc_models])
     y_pred = np.count_nonzero(predictions, axis=0) > (k // 2)
-    print_metrics(y_test, y_pred, f"SVC 1v{neg_class}")
+    if neg_class != 0:
+        print_metrics(y_test, y_pred, f"SVC 1v{neg_class}")
