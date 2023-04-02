@@ -1,15 +1,15 @@
 import tkinter as tk
 from ctypes import windll
 from tkinter import ttk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 import numpy as np
 import pandas as pd
 from joblib import load
 from matplotlib import pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
-                                               NavigationToolbar2Tk)
-from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+import pdf
 
 windll.shcore.SetProcessDpiAwareness(1)
 
@@ -36,7 +36,7 @@ class App(tk.Tk):
         super().__init__(*args, **kwargs)
         self.title("Seizure Detection")
         # self.state("zoomed")
-        self.geometry("800x750")
+        self.geometry("1000x750")
 
         container = ttk.Frame(self)
         container.pack(side="top", fill="both", expand=True)
@@ -57,8 +57,8 @@ class App(tk.Tk):
             "email": "",
             "birth_date": "",
         }
-        # self.show_frame(PatientPage)
-        self.show_frame(DiagnosePage)
+        self.show_frame(PatientPage)
+        # self.show_frame(DiagnosePage)
 
     def show_frame(self, page):
         frame = self.frames[page]
@@ -124,8 +124,9 @@ class PatientPage(ttk.Frame):
 
 
 class DiagnosePage(ttk.Frame):
-    def __init__(self, parent: ttk.Frame, _):
+    def __init__(self, parent: ttk.Frame, controller: App):
         super().__init__(parent)
+        self.controller = controller
 
         select_label = ttk.Label(self, text="Select signal file")
         select_label.grid(row=0, column=0)
@@ -138,6 +139,8 @@ class DiagnosePage(ttk.Frame):
         self.diagnosis = ttk.Label(self, text="")
         self.diagnosis.grid(row=4, column=0)
 
+        self.report = ttk.Button(self, text="Save report", command=self.get_report)
+
     def read_file(self):
         self.filename = askopenfilename(title="Select file", initialdir=".")
         if self.filename is None or self.filename == "":
@@ -145,11 +148,11 @@ class DiagnosePage(ttk.Frame):
         self.file_entry.delete(0, tk.END)
         self.file_entry.insert(0, self.filename)
         self.signal = pd.read_csv(self.filename, index_col=0).squeeze()
-        self.plot(self.signal, "019182")
+        self.idx = np.random.randint(100000, 1000000)
+        self.plot(self.signal, str(self.idx))
 
     def plot(self, signal: pd.Series, idx: str) -> None:
-        # fig = Figure(figsize=(5, 4), dpi=100)
-        fig = plt.figure(figsize=(5, 4), dpi=100)
+        fig = plt.figure(figsize=(8, 4), dpi=100)
         ax: plt.Axes = fig.add_subplot()
         t = np.arange(0, 23, 23.0 / len(signal))
         ax.set_xlabel("Time (s)")
@@ -164,24 +167,37 @@ class DiagnosePage(ttk.Frame):
         toolbar_frame = ttk.Frame(self)
         toolbar_frame.grid(row=2, column=0)
         NavigationToolbar2Tk(canvas, toolbar_frame)
+        fig.savefig(f".\\tmp.png")
 
     def predict(self) -> None:
         if self.signal is None:
             self.diagnosis.config(text="No signal selected")
             return
 
-        pcas = [
-            np.array([self.signal @ np.load(f".\\pca\\pca{i}.npy")])
-            for i in range(2, 6)
-        ]
+        models = [load(f".\\models\\svc\\1v0_fold{i}.joblib") for i in range(5)]
+        predictions = [sum([model.predict([self.signal])[0] for model in models]) > 2]
 
-        models = [load(f".\\models\\rf\\1v{i}.joblib") for i in range(2, 6)]
+        for cls in range(2, 6):
+            pca = [self.signal @ np.load(f".\\pca\\pca{cls}.npy")]
 
-        predictions = [model.predict(pca)[0] for model, pca in zip(models, pcas)]
-        # y_pred = sum(predictions) <= len(predictions) // 2
-        # diagnosis = "Seizure" if y_pred else "No seizure"
-        # diagnosis = "-".join(predictions)
-        self.diagnosis.config(text=str(predictions))
+            models = [load(f".\\models\\svc\\1v{cls}_fold{i}.joblib") for i in range(5)]
+            predictions.append(sum([model.predict(pca)[0] for model in models]) > 2)
+
+        self.result = sum(predictions) > len(predictions) // 2
+        diagnosis = "Seizure" if self.result else "No seizure"
+        self.diagnosis.config(text=diagnosis)
+        self.report.grid(row=5, column=0)
+
+    def get_report(self) -> None:
+        savepath = asksaveasfilename(
+            title="Save file",
+            initialdir=".",
+            initialfile=f"{self.idx}_result.pdf",
+            defaultextension=".pdf",
+        )
+        if savepath is None or savepath == "":
+            return
+        pdf.createpdf(self.controller.patient_data, self.idx, self.result, savepath)
 
 
 def main():

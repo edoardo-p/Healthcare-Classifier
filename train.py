@@ -22,6 +22,7 @@ def main():
     df14 = pd.concat((df1, df4), axis=0)
     df15 = pd.concat((df1, df5), axis=0)
 
+    labels = df.pop("y")
     labels12 = df12.pop("y")
     labels13 = df13.pop("y")
     labels14 = df14.pop("y")
@@ -29,15 +30,16 @@ def main():
 
     params = {"seed": 42, "pca": True, "scale": True, "k": 5}
 
-    # svc.svm_classification(df12, labels12, 2, **params)
-    # svc.svm_classification(df13, labels13, 3, **params)
-    # svc.svm_classification(df14, labels14, 4, **params)
-    # svc.svm_classification(df15, labels15, 5, **params)
+    svc.svm_classification(df, labels, 0, **{"scale": True, "k": 5})
+    svc.svm_classification(df12, labels12, 2, **params)
+    svc.svm_classification(df13, labels13, 3, **params)
+    svc.svm_classification(df14, labels14, 4, **params)
+    svc.svm_classification(df15, labels15, 5, **params)
 
-    rf.rf_classification(df12, labels12, 2, **params)
-    rf.rf_classification(df13, labels13, 3, **params)
-    rf.rf_classification(df14, labels14, 4, **params)
-    rf.rf_classification(df15, labels15, 5, **params)
+    # rf.rf_classification(df12, labels12, 2, **params)
+    # rf.rf_classification(df13, labels13, 3, **params)
+    # rf.rf_classification(df14, labels14, 4, **params)
+    # rf.rf_classification(df15, labels15, 5, **params)
 
 
 if __name__ == "__main__":
