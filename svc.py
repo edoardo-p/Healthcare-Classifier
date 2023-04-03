@@ -63,7 +63,7 @@ def svm_classification(
     )
 
     if kwargs.get("pca", False):
-        components = pca(X_train, threshold=0.99, savefile=f"pca{neg_class}.npy")
+        components = pca(X_train, threshold=0.95, savefile=f"pca{neg_class}.npy")
         X_train = reduce(X_train, components)
         X_test = reduce(X_test, components)
 
@@ -72,7 +72,7 @@ def svm_classification(
         X_test = (X_test - X_test.mean(axis=0)) / X_test.std(axis=0)
 
     # Training k-folds CV
-    svc = SVC(kernel="linear", random_state=seed, C=5)
+    svc = SVC(kernel="linear", random_state=seed, C=100,class_weight="balanced",decision_function_shape="ovr")
     svc_models = cross_validation(svc, X_train, y_train, neg_class, k=k, seed=seed)
     predictions = np.array([model.predict(X_test) for model in svc_models])
     y_pred = np.count_nonzero(predictions, axis=0) > (k // 2)
