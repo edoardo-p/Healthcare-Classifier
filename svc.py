@@ -68,8 +68,9 @@ def svm_classification(
         X_test = reduce(X_test, components)
 
     if kwargs.get("scale", False):
-        X_train = (X_train - X_train.mean(axis=0)) / X_train.std(axis=0)
-        X_test = (X_test - X_test.mean(axis=0)) / X_test.std(axis=0)
+        mu, sigma = X_train.mean(axis=0), X_train.std(axis=0)
+        X_train = (X_train - mu) / sigma
+        X_test = (X_test - mu) / sigma
 
     # Training k-folds CV
     svc = SVC(kernel="linear", random_state=seed, C=5)
