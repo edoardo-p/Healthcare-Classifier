@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-class Conv2D(tf.keras.Model):
+class Conv(tf.keras.Model):
     def __init__(self):
         super().__init__()
         self.conv1 = tf.keras.layers.Conv3D(32, 3, activation="relu")
@@ -15,7 +15,7 @@ class Conv2D(tf.keras.Model):
         self.dense3 = tf.keras.layers.Dense(10)
 
     def call(self, x):
-        w, h, _ = x.shape
+        _, w, h, _, _ = x.shape
         if w != h or w not in (128, 256, 512):
             raise ValueError(
                 "Input tensor must be square of sizes (128x128), (256x256) or (512x512)"
@@ -31,6 +31,12 @@ class Conv2D(tf.keras.Model):
         x = self.conv3(x)
         x = self.pooling(x)
         x = self.flatten(x)
-        x = self.d1(x)
-        x = self.d2(x)
-        return self.d3(x)
+        x = self.dense1(x)
+        x = self.dense2(x)
+        return self.dense3(x)
+
+
+if __name__ == "__main__":
+    model = Conv()
+    model.build((None, 128, 128, 1, 1))
+    model.summary()
