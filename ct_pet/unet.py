@@ -18,7 +18,7 @@ class UNet(nn.Module):
         self.residual = residual
         self.cat = cat
 
-        self.pooling = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pooling = nn.MaxPool3d(kernel_size=2, stride=2)
 
         self.conv1 = ConvBlock(
             ch_in=in_channels, ch_out=64, circular_padding=circular_padding
@@ -40,7 +40,7 @@ class UNet(nn.Module):
         self.up2 = UpConv(ch_in=128, ch_out=64)
         self.up_conv2 = ConvBlock(ch_in=128, ch_out=64)
 
-        self.conv_final = nn.Conv2d(
+        self.conv_final = nn.Conv3d(
             in_channels=64,
             out_channels=out_channels,
             kernel_size=1,
@@ -96,7 +96,7 @@ class ConvBlock(nn.Module):
     def __init__(self, ch_in, ch_out, circular_padding=False):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(
+            nn.Conv3d(
                 ch_in,
                 ch_out,
                 kernel_size=3,
@@ -105,10 +105,10 @@ class ConvBlock(nn.Module):
                 bias=True,
                 padding_mode="circular" if circular_padding else "zeros",
             ),
-            nn.BatchNorm2d(ch_out),
+            nn.BatchNorm3d(ch_out),
             nn.ReLU(inplace=True),
-            nn.Conv2d(ch_out, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
-            nn.BatchNorm2d(ch_out),
+            nn.Conv3d(ch_out, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm3d(ch_out),
             nn.ReLU(inplace=True),
         )
 
@@ -121,8 +121,8 @@ class UpConv(nn.Module):
         super().__init__()
         self.up = nn.Sequential(
             nn.Upsample(scale_factor=2),
-            nn.Conv2d(ch_in, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
-            nn.BatchNorm2d(ch_out),
+            nn.Conv3d(ch_in, ch_out, kernel_size=3, stride=1, padding=1, bias=True),
+            nn.BatchNorm3d(ch_out),
             nn.ReLU(inplace=True),
         )
 
