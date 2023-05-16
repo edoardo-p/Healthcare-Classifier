@@ -48,7 +48,7 @@ class UNet(nn.Module):
             padding=0,
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # encoding path
         cat_dim = 1
         x1 = self.conv1(x)
@@ -112,7 +112,7 @@ class ConvBlock(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv(x)
 
 
@@ -126,5 +126,28 @@ class UpConv(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.up(x)
+
+
+class DiceLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.name = "dice_loss"
+
+    def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """This definition generalize to real valued pred and target vector.
+        This should be differentiable.
+            pred: tensor with first dimension as batch
+            target: tensor with first dimension as batch
+        """
+
+        # have to use contiguous since they may from a torch.view op
+        iflat = pred.contiguous().view(-1)
+        tflat = target.contiguous().view(-1)
+        intersection = (iflat * tflat).sum()
+
+        A_sum = torch.sum(iflat * iflat)
+        B_sum = torch.sum(tflat * tflat)
+
+        return 1 - ((2.0 * intersection + 1.0) / (A_sum + B_sum + 1.0))
