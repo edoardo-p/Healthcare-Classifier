@@ -1,4 +1,6 @@
+import joblib
 import numpy as np
+import radiomics
 import SimpleITK as sitk
 import torch
 from radiomics import featureextractor
@@ -16,7 +18,7 @@ def threshold(data: torch.Tensor, level: float = 0.5) -> torch.Tensor:
 
 def segment(image: np.ndarray) -> np.ndarray:
     model = UNet(residual=False, cat=True)
-    model.load_state_dict(torch.load(".\\models\\conv_l1_cat_500.pt"))
+    model.load_state_dict(torch.load(r".\models\unet\ct_l1_cat_500.pt"))
 
     pred = threshold(model(torch.tensor(image)))
     return pred.cpu().detach().numpy()
@@ -30,3 +32,8 @@ def get_haralick_features(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
     extractor.enableFeaturesClassByName("glcm")
     result = extractor.execute(img, msk)
     return result
+
+
+def classify_tumor(x: np.ndarray) -> bool:
+    model = joblib.load(r".\models\svc.joblib")
+    return bool(model.predict(x))
