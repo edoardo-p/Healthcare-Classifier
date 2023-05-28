@@ -20,18 +20,18 @@ def segment(image: np.ndarray) -> np.ndarray:
     model = UNet(residual=False, cat=True)
     model.load_state_dict(torch.load(r".\models\unet\ct_l1_cat_500.pt"))
 
-    pred = threshold(model(torch.tensor(image)))
+    pred = threshold(model(torch.tensor([[image]], dtype=torch.float32)))
     return pred.cpu().detach().numpy()
 
 
 def get_haralick_features(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
-    img = sitk.ReadImage(image)
-    msk = sitk.ReadImage(mask)
+    img = sitk.GetImageFromArray(image)
+    msk = sitk.GetImageFromArray(mask)
     extractor = featureextractor.RadiomicsFeatureExtractor()
     extractor.disableAllFeatures()
-    extractor.enableFeaturesClassByName("glcm")
+    extractor.enableFeatureClassByName("glcm")
     result = extractor.execute(img, msk)
-    return result
+    return np.array([value for key, value in result.items() if "glcm" in key])
 
 
 def classify_tumor(x: np.ndarray) -> bool:

@@ -100,7 +100,7 @@ def upload_page():
 
 def segmentation_page():
     st.title("Segmented mask")
-    ct_scan = load_image(st.session_state["image_file"])
+    ct_scan = np.load(r".\data\tmp\ct_scan.npy")
     mask = diagnose.segment(ct_scan)
     original, prediction = st.columns(2)
 
@@ -113,13 +113,13 @@ def segmentation_page():
 
     with prediction:
         for i, col in enumerate(st.columns(4)):
-            col.image(mask[i, :, :], clamp=True)
-            col.image(mask[i + 4, :, :], clamp=True)
-            col.image(mask[i + 8, :, :], clamp=True)
-            col.image(mask[i + 12, :, :], clamp=True)
+            col.image(mask[0, 0, i, :, :], clamp=True)
+            col.image(mask[0, 0, i + 4, :, :], clamp=True)
+            col.image(mask[0, 0, i + 8, :, :], clamp=True)
+            col.image(mask[0, 0, i + 12, :, :], clamp=True)
 
     if st.button("Accept"):
-        np.save(r".\data\tmp\mask.npy", mask)
+        np.save(r".\data\tmp\mask.npy", mask[0, 0, :, :, :])
         st.session_state["page"] = "prediction"
         st.experimental_rerun()
 
