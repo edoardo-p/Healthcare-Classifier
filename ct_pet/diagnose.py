@@ -36,4 +36,4 @@ def get_haralick_features(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
 
 def classify_tumor(x: np.ndarray) -> bool:
     model = joblib.load(r".\models\svc.joblib")
-    return bool(model.predict(x))
+    return bool(model.predict(x.reshape(1, -1)))
