@@ -1,29 +1,15 @@
+import diagnose
 import numpy as np
 import streamlit as st
-import torch
-from joblib import load
 from PIL import Image
 from streamlit_cropper import st_cropper
-from unet import UNet
 
 # from streamlit_modal import Modal
 
 
 @st.cache_resource
-def load_image(image_file):
+def load_image(image_file: str) -> np.ndarray:
     return np.rot90(np.load(image_file), 2, (1, 2))
-
-
-@st.cache_resource
-def load_unet_model():
-    model = UNet(residual=False, cat=True)
-    model.load_state_dict(torch.load(r".\models\unet\ct_l1_1300.pt"))
-    return model
-
-
-@st.cache_resource
-def load_svc_model():
-    return load(r".\models\svc.joblib")
 
 
 def get_box(*args, **kwargs):
@@ -101,21 +87,21 @@ def upload_page():
         )
 
         if st.button("Find tumor"):
+            top = cropped["top"]
+            left = cropped["left"]
+            np.save(
+                r".\data\tmp\ct_scan.npy",
+                ct_scan[slc : slc + 16, top : top + 64, left : left + 64],
+            )
+
             st.session_state["page"] = "segmentation"
-            st.session_state["top"] = cropped["top"]
-            st.session_state["left"] = cropped["left"]
-            st.session_state["image_file"] = image_file
             st.experimental_rerun()
 
 
 def segmentation_page():
     st.title("Segmented mask")
-    top = st.session_state["top"]
-    left = st.session_state["left"]
-    slc = st.session_state["slice"]
     ct_scan = load_image(st.session_state["image_file"])
-    roi = ct_scan[slc : slc + 16, left : left + 64, top : top + 64]
-    mask = load_unet_model()(torch.from_numpy(roi))
+    mask = diagnose.segment(ct_scan)
     original, prediction = st.columns(2)
 
     with original:
@@ -133,10 +119,15 @@ def segmentation_page():
             col.image(mask[i + 12, :, :], clamp=True)
 
     if st.button("Accept"):
+        np.save(r".\data\tmp\mask.npy", mask)
         st.session_state["page"] = "prediction"
         st.experimental_rerun()
 
 
 def prediction_page():
     st.title("Predictions")
-    st.write("TODO")
+    image = np.load(r".\data\tmp\ct_scan.npy")
+    mask = np.load(r".\data\tmp\mask.npy")
+    features = diagnose.get_haralick_features(image, mask)
+    result = diagnose.classify_tumor(features)
+    st.write("Malignant" if result else "Benign")
