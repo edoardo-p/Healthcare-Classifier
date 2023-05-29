@@ -90,7 +90,7 @@ def upload_page():
             top = cropped["top"]
             left = cropped["left"]
             np.save(
-                r".\data\tmp\ct_scan.npy",
+                r".\data\tmp\scan.npy",
                 ct_scan[slc : slc + 16, top : top + 64, left : left + 64],
             )
 
@@ -100,7 +100,7 @@ def upload_page():
 
 def segmentation_page():
     st.title("Segmented mask")
-    ct_scan = np.load(r".\data\tmp\ct_scan.npy")
+    ct_scan = np.load(r".\data\tmp\scan.npy")
     mask = diagnose.segment(ct_scan)
     original, prediction = st.columns(2)
 
@@ -126,7 +126,7 @@ def segmentation_page():
 
 def prediction_page():
     st.title("Predictions")
-    image = np.load(r".\data\tmp\ct_scan.npy")
+    image = np.load(r".\data\tmp\scan.npy")
     mask = np.load(r".\data\tmp\mask.npy")
     features = diagnose.get_haralick_features(image, mask)
     result = diagnose.classify_tumor(features)
