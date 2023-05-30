@@ -23,13 +23,13 @@ def get_box(*args, **kwargs):
 
 def login_page():
     # modal = Modal("Data and Security", "privacy_policy_modal")
-    modal = None
+    #modal = None
     st.title("Login")
     st.text_input("Username")
     st.text_input("Password", type="password")
-    open_modal = st.button(label="button")
+    open_modal = st.button(label="Read")  
     if open_modal:
-        with modal.container():
+        with st.container():
             st.write("Personal data shall be:")
             st.markdown(
                 """

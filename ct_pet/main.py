@@ -9,7 +9,7 @@ def main():
     # )
 
     if "page" not in st.session_state:
-        st.session_state["page"] = "upload"
+        st.session_state["page"] = "login"
 
     if st.session_state["page"] == "login":
         pages.login_page()
