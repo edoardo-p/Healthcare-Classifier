@@ -49,6 +49,8 @@ def login_page():
 def upload_page():
     st.title("Radiogram")
     image_file = st.file_uploader("Upload the CT scan", type="npy")
+    if "image" in st.session_state:
+        image_file = st.session_state["image"]
 
     if image_file:
         st.header("Select region of interest")
@@ -73,10 +75,13 @@ def upload_page():
         for button, (icon, offset) in zip(st.columns(4), buttons.items()):
             with button:
                 if st.button(icon, key=f"button_{icon}"):
+                    st.session_state["top"] = cropped["top"]
+                    st.session_state["left"] = cropped["left"]
                     st.session_state["slice"] = slc + offset
                     st.experimental_rerun()
 
         st.write("Preview")
+        st.write(slc)
         st.image(
             ct_scan[
                 slc,
@@ -90,17 +95,18 @@ def upload_page():
             top = cropped["top"]
             left = cropped["left"]
             np.save(
-                r".\data\tmp\ct_scan.npy",
+                r".\data\tmp\scan.npy",
                 ct_scan[slc : slc + 16, top : top + 64, left : left + 64],
             )
 
             st.session_state["page"] = "segmentation"
+            st.session_state["image"] = image_file
             st.experimental_rerun()
 
 
 def segmentation_page():
     st.title("Segmented mask")
-    ct_scan = np.load(r".\data\tmp\ct_scan.npy")
+    ct_scan = np.load(r".\data\tmp\scan.npy")
     mask = diagnose.segment(ct_scan)
     original, prediction = st.columns(2)
 
@@ -118,6 +124,10 @@ def segmentation_page():
             col.image(mask[0, 0, i + 8, :, :], clamp=True)
             col.image(mask[0, 0, i + 12, :, :], clamp=True)
 
+    if st.button("Go back"):
+        st.session_state["page"] = "upload"
+        st.experimental_rerun()
+
     if st.button("Accept"):
         np.save(r".\data\tmp\mask.npy", mask[0, 0, :, :, :])
         st.session_state["page"] = "prediction"
@@ -126,8 +136,11 @@ def segmentation_page():
 
 def prediction_page():
     st.title("Predictions")
-    image = np.load(r".\data\tmp\ct_scan.npy")
+    image = np.load(r".\data\tmp\scan.npy")
     mask = np.load(r".\data\tmp\mask.npy")
     features = diagnose.get_haralick_features(image, mask)
     result = diagnose.classify_tumor(features)
     st.write("Malignant" if result else "Benign")
+    if st.button("New prediction"):
+        st.session_state["page"] = "upload"
+        st.experimental_rerun()

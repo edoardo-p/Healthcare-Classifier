@@ -17,8 +17,8 @@ def threshold(data: torch.Tensor, level: float = 0.5) -> torch.Tensor:
 
 
 def segment(image: np.ndarray) -> np.ndarray:
-    model = UNet(residual=False, cat=True)
-    model.load_state_dict(torch.load(r".\models\unet\ct_l1_cat_500.pt"))
+    model = UNet(residual=False, cat=False)
+    model.load_state_dict(torch.load(r".\models\unet_final.pt"))
 
     pred = threshold(model(torch.tensor([[image]], dtype=torch.float32)))
     return pred.cpu().detach().numpy()
