@@ -9,7 +9,7 @@ from streamlit_cropper import st_cropper
 
 @st.cache_resource
 def load_image(image_file: str) -> np.ndarray:
-    return np.rot90(np.load(image_file), 2, (1, 2))
+    return np.load(image_file)
 
 
 def get_box(*args, **kwargs):
@@ -23,11 +23,11 @@ def get_box(*args, **kwargs):
 
 def login_page():
     # modal = Modal("Data and Security", "privacy_policy_modal")
-    #modal = None
+    # modal = None
     st.title("Login")
     st.text_input("Username")
     st.text_input("Password", type="password")
-    open_modal = st.button(label="Read")  
+    open_modal = st.button(label="Read")
     if open_modal:
         with st.container():
             st.write("Personal data shall be:")
