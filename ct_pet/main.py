@@ -20,8 +20,8 @@ def main():
     if st.session_state["page"] == "segmentation":
         pages.segmentation_page()
 
-    if st.session_state["page"] == "prediction":
-        pages.prediction_page()
+    if st.session_state["page"] == "diagnosis":
+        pages.diagnosis_page()
 
 
 if __name__ == "__main__":

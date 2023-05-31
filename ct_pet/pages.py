@@ -56,7 +56,8 @@ def upload_page():
         st.header("Select region of interest")
         ct_scan = load_image(image_file)
         if "slice" not in st.session_state:
-            st.session_state["slice"] = ct_scan.shape[0] // 2
+            # st.session_state["slice"] = ct_scan.shape[0] // 2
+            st.session_state["slice"] = 140
         slc = st.session_state["slice"]
 
         cropped: dict[str, int] = st_cropper(
@@ -130,17 +131,19 @@ def segmentation_page():
 
     if st.button("Accept"):
         np.save(r".\data\tmp\mask.npy", mask[0, 0, :, :, :])
-        st.session_state["page"] = "prediction"
+        st.session_state["page"] = "diagnosis"
         st.experimental_rerun()
 
 
-def prediction_page():
-    st.title("Predictions")
+def diagnosis_page():
+    st.title("Diagnosis")
     image = np.load(r".\data\tmp\scan.npy")
     mask = np.load(r".\data\tmp\mask.npy")
     features = diagnose.get_haralick_features(image, mask)
     result = diagnose.classify_tumor(features)
-    st.write("Malignant" if result else "Benign")
-    if st.button("New prediction"):
+    diagnosis = "Malignant" if result else "Benign"
+    st.write(f"Our algorithm has detected a {diagnosis} tumor")
+    if st.button("New diagnosis"):
+        st.session_state.clear()
         st.session_state["page"] = "upload"
         st.experimental_rerun()
