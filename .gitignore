@@ -4,3 +4,6 @@
 dist
 build
 *.spec
+
+ct_pet/data
+ct_pet/models
